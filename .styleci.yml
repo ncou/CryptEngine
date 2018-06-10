@@ -1,0 +1,29 @@
+preset: recommended
+
+finder:
+    exclude:
+        - "vendor"
+
+enabled:
+    - blank_line_before_break
+    - blank_line_before_continue
+    - blank_line_before_declare
+    - phpdoc_link_to_see
+    - phpdoc_return_self_reference
+    - phpdoc_no_empty_return
+    - return_type_declaration
+    - const_visibility_required
+    - not_operator_with_successor_space
+    - concat_with_spaces
+    - no_extra_block_blank_lines
+    - const_separation
+    - property_separation
+    - single_line_class_definition
+    - array_indentation
+    - standardize_increment
+    - php_unit_ordered_covers
+    - php_unit_set_up_tear_down_visibility
+    - no_alternative_syntax
+
+disabled:
+    - concat_without_spaces

@@ -1,0 +1,30 @@
+language: php
+
+php:
+  - 7.1
+  #- 7.2
+
+# Note: Code coverage requires php-xDebug extension enabled on CI server
+
+install:
+  # Install composer packages
+  - travis_retry composer install --no-interaction --ignore-platform-reqs
+  # Install coveralls.phar
+  - travis_retry composer require --dev --no-interaction php-coveralls/php-coveralls
+
+script:
+  - composer test-coverage
+  - composer phpstan
+
+after_script:
+  # Submit coverage report to Coveralls servers, see .coveralls.yml
+  - travis_retry php vendor/bin/php-coveralls -v
+  # Submit coverage report to codecov.io
+  - bash <(curl -s https://codecov.io/bash)
+
+# Tell Travis CI to monitor only 'master' branch
+branches:
+  only: master
+
+notifications:
+  email: false
