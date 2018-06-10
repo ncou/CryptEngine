@@ -14,28 +14,28 @@ class CryptEngineTest extends TestCase
 {
     public function testEmptyString()
     {
-        $str    = '';
-        $key    = 'MySecureKey';
+        $str = '';
+        $key = 'MySecureKey';
         $cipher = CryptEngine::encrypt($str, $key);
         $this->assertSame($str, CryptEngine::decrypt($cipher, $key));
     }
 
     public function testEncodeAndDecode()
     {
-        $str    = 'MySecretMessageToEncode';
-        $key    = 'MySecureKey';
+        $str = 'MySecretMessageToEncode';
+        $key = 'MySecureKey';
         $cipher = CryptEngine::encrypt($str, $key);
         $this->assertSame($str, CryptEngine::decrypt($cipher, $key));
     }
 
-     /**
+    /**
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Decryption can not proceed due to invalid cyphertext checksum.
      */
     public function testErrorDecode()
     {
-        $str    = 'MySecretMessageToEncode';
-        $key    = 'MySecureKey';
+        $str = 'MySecretMessageToEncode';
+        $key = 'MySecureKey';
         $cipher = CryptEngine::encrypt($str, $key);
         $this->assertSame($str, CryptEngine::decrypt($cipher, 'Bad_Secret_Key'));
     }
