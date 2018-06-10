@@ -46,7 +46,7 @@ class CryptEngine
     /**
      * Encrypt the given data.
      *
-     * @param string  $data     The data to encrypt
+     * @param string $data     The data to encrypt
      * @param string $password Password used to encrypt data.
      *
      * @return string
