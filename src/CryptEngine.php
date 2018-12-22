@@ -118,6 +118,7 @@ class CryptEngine
      */
     private static function generateIv(): string
     {
+        //$ivSize = openssl_cipher_iv_length($method);
         return random_bytes(self::IVSIZE);
     }
 
