@@ -24,24 +24,24 @@ use RuntimeException;
 class CryptEngine
 {
     /**
-     * @var string AES-256 cipher identifier that will be passed to openssl
+     * @var string AES-256 cipher method name that will be passed to openssl
      */
-    private const CIPHER = 'AES-256-CTR';
+    private const CIPHER_METHOD = 'aes-256-ctr';
 
     /**
      * @var int Size of initialization vector in bytes
      */
-    private const IVSIZE = 16;
+    private const IV_BYTE_SIZE = 16;
 
     /**
-     * @var string Hardcoded hashing algo string.
+     * @var string Hardcoded hashing function name.
      */
-    private const ALGO = 'sha256';
+    private const HASH_FUNCTION_NAME = 'sha256';
 
     /**
      * @var int Size of checksum in bytes
      */
-    private const CKSIZE = 32;
+    private const CHECKSUM_SIZE = 32;
 
     /**
      * Encrypt the given data.
@@ -58,17 +58,17 @@ class CryptEngine
         // Derive key from password
         $key = self::hash($iv, $password);
         // Encrypt the given data
-        $cyphertext = openssl_encrypt($data, self::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
+        $ciphertext = openssl_encrypt($data, self::CIPHER_METHOD, $key, OPENSSL_RAW_DATA, $iv);
 
-        if ($cyphertext === false) {
+        if ($ciphertext === false) {
             // @codeCoverageIgnoreStart
             throw new RuntimeException('Encryption library: Encryption (symmetric) of content failed: ' . openssl_error_string());
             // @codeCoverageIgnoreEnd
         }
         // Checksum : Create a keyed hash for the encrypted data
-        $checksum = self::hash($iv . $cyphertext, $key);
+        $checksum = self::hash($iv . $ciphertext, $key);
         // concat all the elements in the final encrypted string
-        $encrypted = $iv . $checksum . $cyphertext;
+        $encrypted = $iv . $checksum . $ciphertext;
 
         return $encrypted;
     }
@@ -84,22 +84,22 @@ class CryptEngine
     public static function decrypt(string $data, string $password): string
     {
         // Find the IV at the beginning of the cypher text
-        $iv = self::substr($data, 0, self::IVSIZE);
+        $iv = self::substr($data, 0, self::IV_BYTE_SIZE);
         // Gather the checksum portion of the encrypted text
-        $checksum = self::substr($data, self::IVSIZE, self::CKSIZE);
+        $checksum = self::substr($data, self::IV_BYTE_SIZE, self::CHECKSUM_SIZE);
         // Gather message portion of encrypted text after iv and checksum
-        $cyphertext = self::substr($data, self::IVSIZE + self::CKSIZE, null);
+        $ciphertext = self::substr($data, self::IV_BYTE_SIZE + self::CHECKSUM_SIZE, null);
 
         // Derive key from password
         $key = self::hash($iv, $password);
         // Checksum : Create a keyed hash for the decrypted data
-        $sum = self::hash($iv . $cyphertext, $key);
+        $sum = self::hash($iv . $ciphertext, $key);
 
         if (! hash_equals($checksum, $sum)) {
-            throw new InvalidArgumentException('Decryption can not proceed due to invalid cyphertext checksum.');
+            throw new InvalidArgumentException('Decryption can not proceed due to invalid ciphertext checksum.');
         }
         // Decrypt the given data
-        $decrypted = openssl_decrypt($cyphertext, self::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
+        $decrypted = openssl_decrypt($ciphertext, self::CIPHER_METHOD, $key, OPENSSL_RAW_DATA, $iv);
         if ($decrypted === false) {
             // @codeCoverageIgnoreStart
             throw new RuntimeException('Encryption library: Decryption (symmetric) of content failed: ' . openssl_error_string());
@@ -118,8 +118,7 @@ class CryptEngine
      */
     private static function generateIv(): string
     {
-        //$ivSize = openssl_cipher_iv_length($method);
-        return random_bytes(self::IVSIZE);
+        return random_bytes(self::IV_BYTE_SIZE);
     }
 
     /**
@@ -134,7 +133,7 @@ class CryptEngine
      */
     private static function hash(string $data, string $key): string
     {
-        return hash_hmac(self::ALGO, $data, $key, true);
+        return hash_hmac(self::HASH_FUNCTION_NAME, $data, $key, true);
     }
 
     /**

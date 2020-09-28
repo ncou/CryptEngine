@@ -30,7 +30,7 @@ class CryptEngineTest extends TestCase
 
     /**
      * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Decryption can not proceed due to invalid cyphertext checksum.
+     * @expectedExceptionMessage Decryption can not proceed due to invalid ciphertext checksum.
      */
     public function testErrorDecode()
     {
