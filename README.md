@@ -7,14 +7,11 @@
 [![Monthly Downloads](https://img.shields.io/packagist/dm/chiron/crypt-engine.svg?style=flat-square)](https://packagist.org/packages/chiron/crypt-engine/stats)
 
 [![StyleCI](https://styleci.io/repos/136809631/shield?style=flat)](https://styleci.io/repos/136809631)
-[![PHP-Eye](https://php-eye.com/badge/chiron/crypt-engine/tested.svg?style=flat)](https://php-eye.com/package/chiron/crypt-engine)
 [![PHPStan](https://img.shields.io/badge/PHPStan-enabled-brightgreen.svg?style=flat)](https://github.com/phpstan/phpstan)
-
-[![Github Issues](http://githubbadges.herokuapp.com/ncou/CryptEngine/issues.svg?style=flat-square)](https://github.com/ncou/CryptEngine/issues)
 [![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://doge.mit-license.org)
 
 
-Chiron-Router
+Chiron-CryptEngine
 ---------------
 
 Simple PHP Encrypter/Decrypter using openssl module.
