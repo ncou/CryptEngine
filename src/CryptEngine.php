@@ -17,9 +17,9 @@ use RuntimeException;
 /**
  * Encrypter.
  *
- * This class encrypts and decrypts the given value. It uses OpenSSL extension
- * with AES-256 cipher for encryption and HMAC-SHA-256 for hash.
- * The encryption and hash use the same key (derivated from the password).
+ * This class encrypts and decrypts the given value using a password.
+ * It uses OpenSSL extension with AES-256 cipher for encryption and HMAC-SHA-256 for hash.
+ * There is an encryption key and an authentification key both derivated from the password.
  */
 class CryptEngine
 {
@@ -79,6 +79,7 @@ class CryptEngine
             throw new InvalidArgumentException('Decryption can not proceed due to invalid ciphertext length.');
         }
 
+        // Split the header to get all the parts (salt, iv...etc)
         $hmac = self::substr($ciphertext, 0, self::MAC_BYTE_SIZE);
         $salt = self::substr($ciphertext, self::MAC_BYTE_SIZE, self::SALT_BYTE_SIZE);
         $iv = self::substr($ciphertext, self::MAC_BYTE_SIZE + self::SALT_BYTE_SIZE, self::IV_BYTE_SIZE);
