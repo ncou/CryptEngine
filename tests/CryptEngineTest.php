@@ -17,36 +17,36 @@ class CryptEngineTest extends TestCase
     private const SALT_BYTE_SIZE = 32;
     private const IV_BYTE_SIZE = 16;
 
-    public function testEmptyString()
+    public function testWithEmptyString()
     {
         $str = '';
-        $password = 'MySecurePassword';
+        $key = random_bytes(32);
 
-        $ciphertext = CryptEngine::encrypt($str, $password);
+        $ciphertext = CryptEngine::encrypt($str, $key);
 
-        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $password));
+        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
     }
 
-    public function testEncodeAndDecode()
+    public function testSuccessEncryptAndDecrypt()
     {
-        $str = 'MySecretMessageToEncode';
-        $password = 'MySecurePassword';
+        $str = 'MySecretMessageToCrypt';
+        $key = random_bytes(32);
 
-        $ciphertext = CryptEngine::encrypt($str, $password);
+        $ciphertext = CryptEngine::encrypt($str, $key);
 
-        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $password));
+        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
     }
 
     /**
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Decryption can not proceed due to invalid ciphertext integrity.
      */
-    public function testErrorDecodeKey()
+    public function testExceptionDecryptWithBadKey()
     {
-        $str = 'MySecretMessageToEncode';
-        $password = 'MySecurePassword';
+        $str = 'MySecretMessageToCrypt';
+        $key = random_bytes(32);
 
-        $ciphertext = CryptEngine::encrypt($str, $password);
+        $ciphertext = CryptEngine::encrypt($str, $key);
 
         $this->assertSame($str, CryptEngine::decrypt($ciphertext, 'Bad_Secret_Password'));
     }
@@ -55,28 +55,28 @@ class CryptEngineTest extends TestCase
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Decryption can not proceed due to invalid ciphertext integrity.
      */
-    public function testErrorDecodeCipherText()
+    public function testExceptionDecryptWithBadCipherText()
     {
-        $str = 'MySecretMessageToEncode';
-        $password = 'MySecurePassword';
+        $str = 'MySecretMessageToCrypt';
+        $key = random_bytes(32);
 
-        $ciphertext = CryptEngine::encrypt($str, $password);
+        $ciphertext = CryptEngine::encrypt($str, $key);
 
-        $this->assertSame($str, CryptEngine::decrypt($ciphertext . 'a', $password));
+        $this->assertSame($str, CryptEngine::decrypt($ciphertext . 'a', $key));
     }
 
     /**
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Decryption can not proceed due to invalid ciphertext length.
      */
-    public function testErrorDecodeCipherTooSmall()
+    public function testExceptionDecryptWithCipherTooSmall()
     {
-        $str = 'MySecretMessageToEncode';
-        $password = 'MySecurePassword';
+        $str = 'MySecretMessageToCrypt';
+        $key = random_bytes(32);
 
         $ciphertext = str_repeat('A', self::MINIMUM_CIPHERTEXT_SIZE - 1);
 
-        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $password));
+        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
     }
 
     /**
@@ -84,15 +84,15 @@ class CryptEngineTest extends TestCase
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Decryption can not proceed due to invalid ciphertext integrity.
      */
-    public function testErrorDecodeCipherHeader(int $index)
+    public function testExceptionDecryptWithBadCipherHeader(int $index)
     {
-        $str = 'MySecretMessageToEncode';
-        $password = 'MySecurePassword';
+        $str = 'MySecretMessageToCrypt';
+        $key = random_bytes(32);
 
-        $ciphertext = CryptEngine::encrypt($str, $password);
+        $ciphertext = CryptEngine::encrypt($str, $key);
         $ciphertext[$index] = chr((ord($ciphertext[$index]) + 1) % 256);
 
-        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $password));
+        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
     }
 
     public function headerPositions(): array

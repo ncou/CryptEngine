@@ -25,7 +25,6 @@ class CryptEngine
 {
     private const CIPHER_METHOD = 'aes-256-ctr';
     private const HASH_FUNCTION_NAME = 'sha256';
-    private const PBKDF2_ITERATIONS = 100000;
     private const KEY_BYTE_SIZE = 32;
     private const ENCRYPTION_INFO_STRING = 'KeyForEncryption';
     private const AUTHENTICATION_INFO_STRING = 'KeyForAuthentication';
@@ -40,16 +39,16 @@ class CryptEngine
      * Format : HMAC (32 bytes) || SALT (32 bytes) || IV (16 bytes) || CIPHERTEXT (varies).
      *
      * @param string $plaintext     The data to encrypt
-     * @param string $password Password used to encrypt data.
+     * @param string $key Binary key used to encrypt data.
      *
      * @return string
      */
-    public static function encrypt(string $plaintext, string $password): string
+    public static function encrypt(string $plaintext, string $key): string
     {
         // Generate a random value used as 'salt'.
         $salt = random_bytes(self::SALT_BYTE_SIZE);
-        // Derive the separate encryption and authentication keys from the password.
-        list($ekey, $akey) = self::derivateKeys($password, $salt);
+        // Derive the separate encryption/authentication keys from the original key.
+        list($ekey, $akey) = self::derivateKeys($key, $salt);
 
         // Generate initialization vector.
         $iv = random_bytes(self::IV_BYTE_SIZE);
@@ -69,11 +68,11 @@ class CryptEngine
      * Format : HMAC (32 bytes) || SALT (32 bytes) || IV (16 bytes) || CIPHERTEXT (varies).
      *
      * @param string $ciphertext     The Data to decrypt
-     * @param string $password Password that should be used to decrypt input data
+     * @param string $key Binary key that should be used to decrypt input data
      *
      * @return string
      */
-    public static function decrypt(string $ciphertext, string $password): string
+    public static function decrypt(string $ciphertext, string $key): string
     {
         if (self::strlen($ciphertext) < self::MINIMUM_CIPHERTEXT_SIZE) {
             throw new InvalidArgumentException('Decryption can not proceed due to invalid ciphertext length.');
@@ -85,8 +84,8 @@ class CryptEngine
         $iv = self::substr($ciphertext, self::MAC_BYTE_SIZE + self::SALT_BYTE_SIZE, self::IV_BYTE_SIZE);
         $encrypted = self::substr($ciphertext, self::MAC_BYTE_SIZE + self::SALT_BYTE_SIZE + self::IV_BYTE_SIZE, null);
 
-        // Derive the separate encryption and authentication keys from the password.
-        list($ekey, $akey) = self::derivateKeys($password, $salt);
+        // Derive the separate encryption/authentication keys from the original key.
+        list($ekey, $akey) = self::derivateKeys($key, $salt);
 
         // Calculate a fresh hash and compare it with the hmac to enforce integrity.
         $hash = self::hash($salt . $iv . $encrypted, $akey);
@@ -97,26 +96,18 @@ class CryptEngine
         return self::plainDecrypt($encrypted, $ekey, $iv);
     }
 
-    private static function derivateKeys(string $password, string $salt): array
+    private static function derivateKeys(string $key, string $salt): array
     {
-        $prekey = hash_pbkdf2(
-                self::HASH_FUNCTION_NAME,
-                $password,
-                $salt,
-                self::PBKDF2_ITERATIONS,
-                self::KEY_BYTE_SIZE,
-                true
-            );
         $akey = hash_hkdf(
                 self::HASH_FUNCTION_NAME,
-                $prekey,
+                $key,
                 self::KEY_BYTE_SIZE,
                 self::AUTHENTICATION_INFO_STRING,
                 $salt
             );
         $ekey = hash_hkdf(
                 self::HASH_FUNCTION_NAME,
-                $prekey,
+                $key,
                 self::KEY_BYTE_SIZE,
                 self::ENCRYPTION_INFO_STRING,
                 $salt
