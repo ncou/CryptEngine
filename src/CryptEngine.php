@@ -23,107 +23,159 @@ use RuntimeException;
  */
 class CryptEngine
 {
-    /**
-     * @var string AES-256 cipher method name that will be passed to openssl
-     */
     private const CIPHER_METHOD = 'aes-256-ctr';
-
-    /**
-     * @var int Size of initialization vector in bytes
-     */
-    private const IV_BYTE_SIZE = 16;
-
-    /**
-     * @var string Hardcoded hashing function name.
-     */
     private const HASH_FUNCTION_NAME = 'sha256';
-
-    /**
-     * @var int Size of checksum in bytes
-     */
-    private const CHECKSUM_SIZE = 32;
+    private const PBKDF2_ITERATIONS = 100000;
+    private const KEY_BYTE_SIZE = 32;
+    private const ENCRYPTION_INFO_STRING = 'KeyForEncryption';
+    private const AUTHENTICATION_INFO_STRING = 'KeyForAuthentication';
+    private const MINIMUM_CIPHERTEXT_SIZE = 80;
+    private const MAC_BYTE_SIZE = 32;
+    private const SALT_BYTE_SIZE = 32;
+    private const IV_BYTE_SIZE = 16;
 
     /**
      * Encrypt the given data.
      *
-     * @param string $data     The data to encrypt
+     * Format : HMAC (32 bytes) || SALT (32 bytes) || IV (16 bytes) || CIPHERTEXT (varies).
+     *
+     * @param string $plaintext     The data to encrypt
      * @param string $password Password used to encrypt data.
      *
      * @return string
      */
-    public static function encrypt(string $data, string $password): string
+    public static function encrypt(string $plaintext, string $password): string
     {
-        // Generate IV of appropriate size.
-        $iv = self::generateIv();
-        // Derive key from password
-        $key = self::hash($iv, $password);
+        // Generate a random value used as 'salt'.
+        $salt = random_bytes(self::SALT_BYTE_SIZE);
+        // Derive the separate encryption and authentication keys from the password.
+        list($ekey, $akey) = self::derivateKeys($password, $salt);
+
+        // Generate initialization vector.
+        $iv = random_bytes(self::IV_BYTE_SIZE);
+        // Encrypt the given data using the default cipher.
+        $ciphertext = self::plainEncrypt($plaintext, $ekey, $iv);
+
+        // Prepare the encrypted result and calculate the checksum.
+        $encrypted = $salt . $iv . $ciphertext;
+        $hmac = self::hash($encrypted, $akey);
+
+        return $hmac . $encrypted;
+    }
+
+    /**
+     * Decrypt the given data.
+     *
+     * Format : HMAC (32 bytes) || SALT (32 bytes) || IV (16 bytes) || CIPHERTEXT (varies).
+     *
+     * @param string $ciphertext     The Data to decrypt
+     * @param string $password Password that should be used to decrypt input data
+     *
+     * @return string
+     */
+    public static function decrypt(string $ciphertext, string $password): string
+    {
+        if (self::strlen($ciphertext) < self::MINIMUM_CIPHERTEXT_SIZE) {
+            throw new InvalidArgumentException('Decryption can not proceed due to invalid ciphertext length.');
+        }
+
+        $hmac = self::substr($ciphertext, 0, self::MAC_BYTE_SIZE);
+        $salt = self::substr($ciphertext, self::MAC_BYTE_SIZE, self::SALT_BYTE_SIZE);
+        $iv = self::substr($ciphertext, self::MAC_BYTE_SIZE + self::SALT_BYTE_SIZE, self::IV_BYTE_SIZE);
+        $encrypted = self::substr($ciphertext, self::MAC_BYTE_SIZE + self::SALT_BYTE_SIZE + self::IV_BYTE_SIZE, null);
+
+        // Derive the separate encryption and authentication keys from the password.
+        list($ekey, $akey) = self::derivateKeys($password, $salt);
+
+        // Calculate a fresh hash and compare it with the hmac to enforce integrity.
+        $hash = self::hash($salt . $iv . $encrypted, $akey);
+        if (! hash_equals($hmac, $hash)) {
+            throw new InvalidArgumentException('Decryption can not proceed due to invalid ciphertext integrity.');
+        }
+
+        return self::plainDecrypt($encrypted, $ekey, $iv);
+    }
+
+    private static function derivateKeys(string $password, string $salt): array
+    {
+        $prekey = hash_pbkdf2(
+                self::HASH_FUNCTION_NAME,
+                $password,
+                $salt,
+                self::PBKDF2_ITERATIONS,
+                self::KEY_BYTE_SIZE,
+                true
+            );
+        $akey = hash_hkdf(
+                self::HASH_FUNCTION_NAME,
+                $prekey,
+                self::KEY_BYTE_SIZE,
+                self::AUTHENTICATION_INFO_STRING,
+                $salt
+            );
+        $ekey = hash_hkdf(
+                self::HASH_FUNCTION_NAME,
+                $prekey,
+                self::KEY_BYTE_SIZE,
+                self::ENCRYPTION_INFO_STRING,
+                $salt
+            );
+
+        return [$ekey, $akey];
+    }
+
+    /**
+     * Raw encryption.
+     *
+     * @param string $plaintext
+     * @param string $key
+     * @param string $iv
+     *
+     * @throws \RuntimeException
+     *
+     * @return string
+     */
+    private static function plainEncrypt(string $plaintext, string $key, string $iv): string
+    {
         // Encrypt the given data
-        $ciphertext = openssl_encrypt($data, self::CIPHER_METHOD, $key, OPENSSL_RAW_DATA, $iv);
+        $ciphertext = openssl_encrypt($plaintext, self::CIPHER_METHOD, $key, OPENSSL_RAW_DATA, $iv);
 
         if ($ciphertext === false) {
             // @codeCoverageIgnoreStart
             throw new RuntimeException('Encryption library: Encryption (symmetric) of content failed: ' . openssl_error_string());
             // @codeCoverageIgnoreEnd
         }
-        // Checksum : Create a keyed hash for the encrypted data
-        $checksum = self::hash($iv . $ciphertext, $key);
-        // concat all the elements in the final encrypted string
-        $encrypted = $iv . $checksum . $ciphertext;
 
-        return $encrypted;
+        return $ciphertext;
     }
 
     /**
-     * Decrypt the given data.
+     * Raw decryption.
      *
-     * @param string $data     The Data to decrypt
-     * @param string $password Password that should be used to decrypt input data
+     * @param string $ciphertext
+     * @param string $key
+     * @param string $iv
+     *
+     * @throws \RuntimeException
      *
      * @return string
      */
-    public static function decrypt(string $data, string $password): string
+    private static function plainDecrypt(string $ciphertext, string $key, string $iv): string
     {
-        // Find the IV at the beginning of the cypher text
-        $iv = self::substr($data, 0, self::IV_BYTE_SIZE);
-        // Gather the checksum portion of the encrypted text
-        $checksum = self::substr($data, self::IV_BYTE_SIZE, self::CHECKSUM_SIZE);
-        // Gather message portion of encrypted text after iv and checksum
-        $ciphertext = self::substr($data, self::IV_BYTE_SIZE + self::CHECKSUM_SIZE, null);
-
-        // Derive key from password
-        $key = self::hash($iv, $password);
-        // Checksum : Create a keyed hash for the decrypted data
-        $sum = self::hash($iv . $ciphertext, $key);
-
-        if (! hash_equals($checksum, $sum)) {
-            throw new InvalidArgumentException('Decryption can not proceed due to invalid ciphertext checksum.');
-        }
         // Decrypt the given data
-        $decrypted = openssl_decrypt($ciphertext, self::CIPHER_METHOD, $key, OPENSSL_RAW_DATA, $iv);
-        if ($decrypted === false) {
+        $plaintext = openssl_decrypt($ciphertext, self::CIPHER_METHOD, $key, OPENSSL_RAW_DATA, $iv);
+
+        if ($plaintext === false) {
             // @codeCoverageIgnoreStart
             throw new RuntimeException('Encryption library: Decryption (symmetric) of content failed: ' . openssl_error_string());
             // @codeCoverageIgnoreEnd
         }
 
-        return $decrypted;
+        return $plaintext;
     }
 
     /**
-     * generate initialization vector.
-     *
-     * @throws GenericEncryptionException
-     *
-     * @return string
-     */
-    private static function generateIv(): string
-    {
-        return random_bytes(self::IV_BYTE_SIZE);
-    }
-
-    /**
-     * Perform a single hmac iteration. This adds an extra layer of safety because hash_hmac can return false if algo
-     * is not valid. Return type hint will throw an exception if this happens.
+     * Generate a keyed hash value using the HMAC method.
      *
      *
      * @param string $data Data to hash
@@ -143,10 +195,22 @@ class CryptEngine
      * @param int    $start
      * @param int    $length
      *
-     * @return string the extracted part of string; or FALSE on failure, or an empty string.
+     * @return string
      */
     private static function substr(string $string, int $start, int $length = null): string
     {
         return mb_substr($string, $start, $length, '8bit');
+    }
+
+    /**
+     * Returns length of a string.
+     *
+     * @param string $string The string whose length we wish to obtain
+     *
+     * @return int
+     */
+    private static function strlen(string $string): int
+    {
+        return mb_strlen($string, '8bit');
     }
 }
