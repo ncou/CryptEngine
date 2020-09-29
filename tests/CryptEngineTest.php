@@ -12,11 +12,6 @@ use PHPUnit\Framework\TestCase;
  */
 class CryptEngineTest extends TestCase
 {
-    private const MINIMUM_CIPHERTEXT_SIZE = 80;
-    private const MAC_BYTE_SIZE = 32;
-    private const SALT_BYTE_SIZE = 32;
-    private const IV_BYTE_SIZE = 16;
-
     public function testWithEmptyString()
     {
         $str = '';
@@ -45,10 +40,39 @@ class CryptEngineTest extends TestCase
     {
         $str = 'MySecretMessageToCrypt';
         $key = random_bytes(32);
+        $badKey = random_bytes(32);
 
         $ciphertext = CryptEngine::encrypt($str, $key);
 
-        $this->assertSame($str, CryptEngine::decrypt($ciphertext, 'Bad_Secret_Password'));
+        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $badKey));
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Bad key length [expect a 32 bytes length]
+     */
+    public function testExceptionDecryptWithKeyTooShort()
+    {
+        $str = 'MySecretMessageToCrypt';
+        $key = random_bytes(30);
+
+        $ciphertext = CryptEngine::encrypt($str, $key);
+
+        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     * @expectedExceptionMessage Bad key length [expect a 32 bytes length]
+     */
+    public function testExceptionDecryptWithKeyTooLong()
+    {
+        $str = 'MySecretMessageToCrypt';
+        $key = random_bytes(34);
+
+        $ciphertext = CryptEngine::encrypt($str, $key);
+
+        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
     }
 
     /**
@@ -74,7 +98,7 @@ class CryptEngineTest extends TestCase
         $str = 'MySecretMessageToCrypt';
         $key = random_bytes(32);
 
-        $ciphertext = str_repeat('A', self::MINIMUM_CIPHERTEXT_SIZE - 1);
+        $ciphertext = str_repeat('A', CryptEngine::MINIMUM_CIPHERTEXT_SIZE - 1);
 
         $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
     }
@@ -99,9 +123,9 @@ class CryptEngineTest extends TestCase
     {
         return [
             [0], // the hmac.
-            [self::MAC_BYTE_SIZE + 1], // the salt
-            [self::MAC_BYTE_SIZE + self::SALT_BYTE_SIZE + 1], // the IV
-            [self::MAC_BYTE_SIZE + self::SALT_BYTE_SIZE + self::IV_BYTE_SIZE + 1], // the ciphertext
+            [CryptEngine::MAC_BYTE_SIZE + 1], // the salt
+            [CryptEngine::MAC_BYTE_SIZE + CryptEngine::SALT_BYTE_SIZE + 1], // the IV
+            [CryptEngine::MAC_BYTE_SIZE + CryptEngine::SALT_BYTE_SIZE + CryptEngine::IV_BYTE_SIZE + 1], // the ciphertext
         ];
     }
 }

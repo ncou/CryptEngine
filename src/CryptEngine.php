@@ -23,15 +23,15 @@ use RuntimeException;
  */
 class CryptEngine
 {
-    private const CIPHER_METHOD = 'aes-256-ctr';
-    private const HASH_FUNCTION_NAME = 'sha256';
-    private const KEY_BYTE_SIZE = 32;
-    private const ENCRYPTION_INFO_STRING = 'KeyForEncryption';
-    private const AUTHENTICATION_INFO_STRING = 'KeyForAuthentication';
-    private const MINIMUM_CIPHERTEXT_SIZE = 80;
-    private const MAC_BYTE_SIZE = 32;
-    private const SALT_BYTE_SIZE = 32;
-    private const IV_BYTE_SIZE = 16;
+    public const CIPHER_METHOD = 'aes-256-ctr';
+    public const HASH_FUNCTION_NAME = 'sha256';
+    public const KEY_BYTE_SIZE = 32;
+    public const ENCRYPTION_INFO_STRING = 'KeyForEncryption';
+    public const AUTHENTICATION_INFO_STRING = 'KeyForAuthentication';
+    public const MINIMUM_CIPHERTEXT_SIZE = 80;
+    public const MAC_BYTE_SIZE = 32;
+    public const SALT_BYTE_SIZE = 32;
+    public const IV_BYTE_SIZE = 16;
 
     /**
      * Encrypt the given data.
@@ -45,6 +45,8 @@ class CryptEngine
      */
     public static function encrypt(string $plaintext, string $key): string
     {
+        self::assertKeyLength($key);
+
         // Generate a random value used as 'salt'.
         $salt = random_bytes(self::SALT_BYTE_SIZE);
         // Derive the separate encryption/authentication keys from the original key.
@@ -74,6 +76,8 @@ class CryptEngine
      */
     public static function decrypt(string $ciphertext, string $key): string
     {
+        self::assertKeyLength($key);
+
         if (self::strlen($ciphertext) < self::MINIMUM_CIPHERTEXT_SIZE) {
             throw new InvalidArgumentException('Decryption can not proceed due to invalid ciphertext length.');
         }
@@ -164,6 +168,22 @@ class CryptEngine
         }
 
         return $plaintext;
+    }
+
+    /**
+     * Assert the binary key has a 32 bytes length.
+     *
+     * @param string $key
+     *
+     * @throws \InvalidArgumentException
+     *
+     */
+    private static function assertKeyLength(string $key): void
+    {
+        if (self::strlen($key) !== self::KEY_BYTE_SIZE) {
+            throw new InvalidArgumentException(sprintf('Bad key length [expect a %d bytes length]', self::KEY_BYTE_SIZE));
+
+        }
     }
 
     /**
