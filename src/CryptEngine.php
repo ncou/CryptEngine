@@ -12,7 +12,7 @@ use RuntimeException;
  *
  * This class encrypts and decrypts the given value using a password.
  * It uses OpenSSL extension with AES-256 cipher for encryption and HMAC-SHA-256 for hash.
- * There is an encryption key and an authentification key both derivated from the password.
+ * The encryption key and authentification key are both derivated from the original key.
  */
 class CryptEngine
 {
