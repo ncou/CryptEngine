@@ -19,7 +19,7 @@ class CryptEngineTest extends TestCase
 
         $ciphertext = CryptEngine::encrypt($str, $key);
 
-        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
+        self::assertSame($str, CryptEngine::decrypt($ciphertext, $key));
     }
 
     public function testSuccessEncryptAndDecrypt(): void
@@ -29,7 +29,7 @@ class CryptEngineTest extends TestCase
 
         $ciphertext = CryptEngine::encrypt($str, $key);
 
-        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
+        self::assertSame($str, CryptEngine::decrypt($ciphertext, $key));
     }
 
     public function testExceptionDecryptWithBadKey(): void
