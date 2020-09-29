@@ -32,10 +32,6 @@ class CryptEngineTest extends TestCase
         $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Decryption can not proceed due to invalid ciphertext integrity.
-     */
     public function testExceptionDecryptWithBadKey()
     {
         $str = 'MySecretMessageToCrypt';
@@ -44,41 +40,56 @@ class CryptEngineTest extends TestCase
 
         $ciphertext = CryptEngine::encrypt($str, $key);
 
-        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $badKey));
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Decryption can not proceed due to invalid ciphertext integrity.');
+
+        CryptEngine::decrypt($ciphertext, $badKey);
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Bad key length [expect a 32 bytes length]
-     */
+    public function testExceptionEncryptWithKeyTooShort()
+    {
+        $str = 'MySecretMessageToCrypt';
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Bad key length [expecting 32 bytes].');
+
+        $ciphertext = CryptEngine::encrypt($str, random_bytes(30));
+    }
+
     public function testExceptionDecryptWithKeyTooShort()
     {
         $str = 'MySecretMessageToCrypt';
-        $key = random_bytes(30);
 
-        $ciphertext = CryptEngine::encrypt($str, $key);
+        $ciphertext = CryptEngine::encrypt($str, random_bytes(32));
 
-        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Bad key length [expecting 32 bytes].');
+
+        CryptEngine::decrypt($ciphertext, random_bytes(30));
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Bad key length [expect a 32 bytes length]
-     */
+    public function testExceptionEncryptWithKeyTooLong()
+    {
+        $str = 'MySecretMessageToCrypt';
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Bad key length [expecting 32 bytes].');
+
+        $ciphertext = CryptEngine::encrypt($str, random_bytes(34));
+    }
+
     public function testExceptionDecryptWithKeyTooLong()
     {
         $str = 'MySecretMessageToCrypt';
-        $key = random_bytes(34);
 
-        $ciphertext = CryptEngine::encrypt($str, $key);
+        $ciphertext = CryptEngine::encrypt($str, random_bytes(32));
 
-        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Bad key length [expecting 32 bytes].');
+
+        CryptEngine::decrypt($ciphertext, random_bytes(34));
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Decryption can not proceed due to invalid ciphertext integrity.
-     */
     public function testExceptionDecryptWithBadCipherText()
     {
         $str = 'MySecretMessageToCrypt';
@@ -86,13 +97,12 @@ class CryptEngineTest extends TestCase
 
         $ciphertext = CryptEngine::encrypt($str, $key);
 
-        $this->assertSame($str, CryptEngine::decrypt($ciphertext . 'a', $key));
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Decryption can not proceed due to invalid ciphertext integrity.');
+
+        CryptEngine::decrypt($ciphertext . 'a', $key);
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Decryption can not proceed due to invalid ciphertext length.
-     */
     public function testExceptionDecryptWithCipherTooSmall()
     {
         $str = 'MySecretMessageToCrypt';
@@ -100,13 +110,14 @@ class CryptEngineTest extends TestCase
 
         $ciphertext = str_repeat('A', CryptEngine::MINIMUM_CIPHERTEXT_SIZE - 1);
 
-        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Decryption can not proceed due to invalid ciphertext length.');
+
+        CryptEngine::decrypt($ciphertext, $key);
     }
 
     /**
      * @dataProvider headerPositions
-     * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Decryption can not proceed due to invalid ciphertext integrity.
      */
     public function testExceptionDecryptWithBadCipherHeader(int $index)
     {
@@ -116,7 +127,10 @@ class CryptEngineTest extends TestCase
         $ciphertext = CryptEngine::encrypt($str, $key);
         $ciphertext[$index] = chr((ord($ciphertext[$index]) + 1) % 256);
 
-        $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Decryption can not proceed due to invalid ciphertext integrity.');
+
+        CryptEngine::decrypt($ciphertext, $key);
     }
 
     public function headerPositions(): array

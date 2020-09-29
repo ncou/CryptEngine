@@ -1,13 +1,6 @@
 <?php
-/**
- * Simple PHP Encrypter/Decrypter.
- *
- * @author  ncou
- *
- * @see    https://github.com/ncou/CryptEngine
- *
- * @license https://github.com/ncou/CryptEngine/blob/master/LICENSE (MIT License)
- */
+
+declare(strict_types=1);
 
 namespace Chiron;
 
@@ -26,8 +19,8 @@ class CryptEngine
     public const CIPHER_METHOD = 'aes-256-ctr';
     public const HASH_FUNCTION_NAME = 'sha256';
     public const KEY_BYTE_SIZE = 32;
-    public const ENCRYPTION_INFO_STRING = 'KeyForEncryption';
-    public const AUTHENTICATION_INFO_STRING = 'KeyForAuthentication';
+    public const ENCRYPTION_INFO_STRING = 'CryptEngine|KeyForEncryption';
+    public const AUTHENTICATION_INFO_STRING = 'CryptEngine|KeyForAuthentication';
     public const MINIMUM_CIPHERTEXT_SIZE = 80;
     public const MAC_BYTE_SIZE = 32;
     public const SALT_BYTE_SIZE = 32;
@@ -38,8 +31,8 @@ class CryptEngine
      *
      * Format : HMAC (32 bytes) || SALT (32 bytes) || IV (16 bytes) || CIPHERTEXT (varies).
      *
-     * @param string $plaintext     The data to encrypt
-     * @param string $key Binary key used to encrypt data.
+     * @param string $plaintext The data to encrypt
+     * @param string $key       Binary key used to encrypt data.
      *
      * @return string
      */
@@ -50,7 +43,7 @@ class CryptEngine
         // Generate a random value used as 'salt'.
         $salt = random_bytes(self::SALT_BYTE_SIZE);
         // Derive the separate encryption/authentication keys from the original key.
-        list($ekey, $akey) = self::derivateKeys($key, $salt);
+        [$ekey, $akey] = self::derivateKeys($key, $salt);
 
         // Generate initialization vector.
         $iv = random_bytes(self::IV_BYTE_SIZE);
@@ -69,8 +62,8 @@ class CryptEngine
      *
      * Format : HMAC (32 bytes) || SALT (32 bytes) || IV (16 bytes) || CIPHERTEXT (varies).
      *
-     * @param string $ciphertext     The Data to decrypt
-     * @param string $key Binary key that should be used to decrypt input data
+     * @param string $ciphertext The Data to decrypt
+     * @param string $key        Binary key that should be used to decrypt input data
      *
      * @return string
      */
@@ -89,7 +82,7 @@ class CryptEngine
         $encrypted = self::substr($ciphertext, self::MAC_BYTE_SIZE + self::SALT_BYTE_SIZE + self::IV_BYTE_SIZE, null);
 
         // Derive the separate encryption/authentication keys from the original key.
-        list($ekey, $akey) = self::derivateKeys($key, $salt);
+        [$ekey, $akey] = self::derivateKeys($key, $salt);
 
         // Calculate a fresh hash and compare it with the hmac to enforce integrity.
         $hash = self::hash($salt . $iv . $encrypted, $akey);
@@ -100,22 +93,32 @@ class CryptEngine
         return self::plainDecrypt($encrypted, $ekey, $iv);
     }
 
+    /**
+     * Derives encryption and authentication keys from the secret key.
+     *
+     * @param string $key
+     * @param string $salt
+     *
+     * @return array<string>
+     */
     private static function derivateKeys(string $key, string $salt): array
     {
-        $akey = hash_hkdf(
-                self::HASH_FUNCTION_NAME,
-                $key,
-                self::KEY_BYTE_SIZE,
-                self::AUTHENTICATION_INFO_STRING,
-                $salt
-            );
+        // Encryption key.
         $ekey = hash_hkdf(
-                self::HASH_FUNCTION_NAME,
-                $key,
-                self::KEY_BYTE_SIZE,
-                self::ENCRYPTION_INFO_STRING,
-                $salt
-            );
+            self::HASH_FUNCTION_NAME,
+            $key,
+            self::KEY_BYTE_SIZE,
+            self::ENCRYPTION_INFO_STRING,
+            $salt
+        );
+        // Authentication key.
+        $akey = hash_hkdf(
+            self::HASH_FUNCTION_NAME,
+            $key,
+            self::KEY_BYTE_SIZE,
+            self::AUTHENTICATION_INFO_STRING,
+            $salt
+        );
 
         return [$ekey, $akey];
     }
@@ -138,7 +141,7 @@ class CryptEngine
 
         if ($ciphertext === false) {
             // @codeCoverageIgnoreStart
-            throw new RuntimeException('Encryption library: Encryption (symmetric) of content failed: ' . openssl_error_string());
+            throw new RuntimeException(sprintf('Encryption of content failed [%s].', openssl_error_string()));
             // @codeCoverageIgnoreEnd
         }
 
@@ -163,7 +166,7 @@ class CryptEngine
 
         if ($plaintext === false) {
             // @codeCoverageIgnoreStart
-            throw new RuntimeException('Encryption library: Decryption (symmetric) of content failed: ' . openssl_error_string());
+            throw new RuntimeException(sprintf('Decryption of content failed [%s].', openssl_error_string()));
             // @codeCoverageIgnoreEnd
         }
 
@@ -176,19 +179,16 @@ class CryptEngine
      * @param string $key
      *
      * @throws \InvalidArgumentException
-     *
      */
     private static function assertKeyLength(string $key): void
     {
         if (self::strlen($key) !== self::KEY_BYTE_SIZE) {
-            throw new InvalidArgumentException(sprintf('Bad key length [expect a %d bytes length]', self::KEY_BYTE_SIZE));
-
+            throw new InvalidArgumentException(sprintf('Bad key length [expecting %d bytes].', self::KEY_BYTE_SIZE));
         }
     }
 
     /**
      * Generate a keyed hash value using the HMAC method.
-     *
      *
      * @param string $data Data to hash
      * @param string $key  Key to use to authenticate the hash.
@@ -209,7 +209,7 @@ class CryptEngine
      *
      * @return string
      */
-    private static function substr(string $string, int $start, int $length = null): string
+    private static function substr(string $string, int $start, ?int $length = null): string
     {
         return mb_substr($string, $start, $length, '8bit');
     }
