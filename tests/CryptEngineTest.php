@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  */
 class CryptEngineTest extends TestCase
 {
-    public function testWithEmptyString()
+    public function testWithEmptyString(): void
     {
         $str = '';
         $key = random_bytes(32);
@@ -22,7 +22,7 @@ class CryptEngineTest extends TestCase
         $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
     }
 
-    public function testSuccessEncryptAndDecrypt()
+    public function testSuccessEncryptAndDecrypt(): void
     {
         $str = 'MySecretMessageToCrypt';
         $key = random_bytes(32);
@@ -32,7 +32,7 @@ class CryptEngineTest extends TestCase
         $this->assertSame($str, CryptEngine::decrypt($ciphertext, $key));
     }
 
-    public function testExceptionDecryptWithBadKey()
+    public function testExceptionDecryptWithBadKey(): void
     {
         $str = 'MySecretMessageToCrypt';
         $key = random_bytes(32);
@@ -46,7 +46,7 @@ class CryptEngineTest extends TestCase
         CryptEngine::decrypt($ciphertext, $badKey);
     }
 
-    public function testExceptionEncryptWithKeyTooShort()
+    public function testExceptionEncryptWithKeyTooShort(): void
     {
         $str = 'MySecretMessageToCrypt';
 
@@ -56,7 +56,7 @@ class CryptEngineTest extends TestCase
         $ciphertext = CryptEngine::encrypt($str, random_bytes(30));
     }
 
-    public function testExceptionDecryptWithKeyTooShort()
+    public function testExceptionDecryptWithKeyTooShort(): void
     {
         $str = 'MySecretMessageToCrypt';
 
@@ -68,7 +68,7 @@ class CryptEngineTest extends TestCase
         CryptEngine::decrypt($ciphertext, random_bytes(30));
     }
 
-    public function testExceptionEncryptWithKeyTooLong()
+    public function testExceptionEncryptWithKeyTooLong(): void
     {
         $str = 'MySecretMessageToCrypt';
 
@@ -78,7 +78,7 @@ class CryptEngineTest extends TestCase
         $ciphertext = CryptEngine::encrypt($str, random_bytes(34));
     }
 
-    public function testExceptionDecryptWithKeyTooLong()
+    public function testExceptionDecryptWithKeyTooLong(): void
     {
         $str = 'MySecretMessageToCrypt';
 
@@ -90,7 +90,7 @@ class CryptEngineTest extends TestCase
         CryptEngine::decrypt($ciphertext, random_bytes(34));
     }
 
-    public function testExceptionDecryptWithBadCipherText()
+    public function testExceptionDecryptWithBadCipherText(): void
     {
         $str = 'MySecretMessageToCrypt';
         $key = random_bytes(32);
@@ -103,7 +103,7 @@ class CryptEngineTest extends TestCase
         CryptEngine::decrypt($ciphertext . 'a', $key);
     }
 
-    public function testExceptionDecryptWithCipherTooSmall()
+    public function testExceptionDecryptWithCipherTooSmall(): void
     {
         $str = 'MySecretMessageToCrypt';
         $key = random_bytes(32);
@@ -119,7 +119,7 @@ class CryptEngineTest extends TestCase
     /**
      * @dataProvider headerPositions
      */
-    public function testExceptionDecryptWithBadCipherHeader(int $index)
+    public function testExceptionDecryptWithBadCipherHeader(int $index): void
     {
         $str = 'MySecretMessageToCrypt';
         $key = random_bytes(32);
@@ -133,6 +133,9 @@ class CryptEngineTest extends TestCase
         CryptEngine::decrypt($ciphertext, $key);
     }
 
+    /**
+     * @return array<array<int>>
+     */
     public function headerPositions(): array
     {
         return [

@@ -12,7 +12,8 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^8.0",
-        "phpstan/phpstan": "^0.12.0",
+        "phpstan/phpstan": "^0.12",
+        "phpstan/phpstan-phpunit": "^0.12",
         "chiron/coding-standard": "^3.0"
     },
     "autoload": {
@@ -32,7 +33,7 @@
         ],
         "phpunit": "phpunit --colors=always",
         "phpcs": "phpcs src",
-        "phpstan": "phpstan analyse src --level=7",
+        "phpstan": "phpstan analyse --ansi",
         "test-coverage": "phpunit --coverage-clover clover.xml",
         "check-style": "phpcs src tests",
         "fix-style": "phpcbf src tests"
