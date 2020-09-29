@@ -29,12 +29,10 @@
     "scripts": {
         "test": [
             "@phpunit",
-            "@phpcs",
             "@phpstan",
             "@check-style"
         ],
         "phpunit": "phpunit --colors=always",
-        "phpcs": "phpcs src",
         "phpstan": "phpstan analyse --ansi",
         "test-coverage": "phpunit --coverage-clover clover.xml",
         "check-style": "phpcs src tests",
